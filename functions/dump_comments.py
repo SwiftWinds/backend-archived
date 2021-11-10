@@ -16,7 +16,7 @@ def dump_comments(query="best C++ IDE", filename="dump.dumps"):
     reddit = comments.connect()
 
     all_comments = (seq(reddit_urls)
-                    .flat_map(lambda reddit_url: comments.get_comments(reddit, reddit_url))
+                    .flat_map(lambda reddit_url: comments.get_comments_from_url(reddit, reddit_url))
                     .map(recommendations.clean_comment))
 
     with open(filename, 'w') as file_handler:

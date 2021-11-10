@@ -1,5 +1,6 @@
 # hide api
 import os
+import time
 from collections import defaultdict
 
 from dotenv import load_dotenv
@@ -140,7 +141,10 @@ def keyword_extractor_chunked(chunked_comments):
 def movie_extractor_chunked(chunked_comments):
     model_id = "ex_8vwmUB7s"
     data = seq(chunked_comments).map(lambda chunk: str(chunk)).to_list()
+    start = time.time()
     results = ml.extractors.extract(model_id, data).body
+    end = time.time()
+    print("Time to run inference: " + str(end - start))
 
     # for i, chunked_result in enumerate(results):
     #     for extraction in chunked_result["extractions"]:
@@ -164,12 +168,16 @@ def movie_extractor_chunked(chunked_comments):
 
     count = 0
     results = []
+    start = time.time()
     for entry in unfiltered_results.items():
         if count == 10:
             break
         if cross_reference_imdb(entry):
             count += 1
             results.append(entry)
+    end = time.time()
+
+    print("Time to cross-reference: " + str(end - start))
 
     return results
 
