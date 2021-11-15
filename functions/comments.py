@@ -70,6 +70,9 @@ def comment_to_dict(comment):
 
 
 def comment_obj_to_dict(comment):
+    if isinstance(comment, MoreComments):
+        print(f"ERROR: received MoreComments with {comment.count} comments in comment_obj_to_dict")
+        return None
     return {
         "text": comment.body,
         "score": comment.score,
@@ -77,14 +80,12 @@ def comment_obj_to_dict(comment):
     }
 
 
-def comments_to_dict(comments):
-    comment_list = []
-    if isinstance(comments, MoreComments):
-        comment_list.append(comments.comments())
-    else:
-        comment_list.append(comments)
-    comment_list = seq(comment_list).map(comment_obj_to_dict)
-    return comment_list
+# def comments_to_dict(comments):
+#     if isinstance(comments, MoreComments) and comments.count == 0:
+#         return []
+#     comment_list = comments.comments() if isinstance(comments, MoreComments) else [comments]
+#     comment_list = seq(comment_list).map(comment_obj_to_dict).filter_not(lambda x: x is None)
+#     return comment_list
 
 
 # def get_comments(reddit, url: str) -> list:
@@ -151,42 +152,22 @@ def get_comments_from_url_pmaw(url: str) -> list:
     return comments
 
 
-def get_sub_comments(comment, all_comments, verbose=True):
-    all_comments.append(comment)
-    if not hasattr(comment, "replies"):
-        replies = comment.comments()
-        if verbose:
-            print("fetching (" + str(len(all_comments)) + " comments fetched total)")
-    else:
-        replies = comment.replies
-    for child in replies:
-        get_sub_comments(child, all_comments, verbose=verbose)
-
-
-def get_all(r, submission_id, verbose=True):
-    submission = r.submission(submission_id)
-    comments = submission.comments
+def get_all(r, submission_id):
+    submission = r.submission(id=submission_id)
     comments_list = []
-    for comment in comments:
-        get_sub_comments(comment, comments_list, verbose=verbose)
+    submission.comments.replace_more(limit=None)
+    for comment in submission.comments.list():
+        comments_list.append(comment)
     return comments_list
 
 
 def get_comments_from_url_praw(url: str) -> list:
     start = time.time()
     submission_id = url_to_submission_id(url)
-    comments = get_all(r, submission_id)
-    comment_list = []
-    for comment in comments:
-        if isinstance(comment, MoreComments):
-            comment_list.extend(comment.comments())
-        else:
-            comment_list.append(comment)
-    comment_list = seq(comment_list).map(comments_to_dict).flatten()
-
+    comments = seq(get_all(r, submission_id)).map(comment_obj_to_dict)
     end = time.time()
     print(f"Took {end - start} seconds")
-    return comment_list
+    return comments
 
 
 def url_to_submission_id(url):

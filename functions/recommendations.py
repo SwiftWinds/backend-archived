@@ -23,6 +23,7 @@ def get_recommendations(query):
     # search google for "<query name> reddit"
     start = time.time()
     reddit_urls = search.return_links(query)
+    print(*reddit_urls, sep="\n")
     print("Searching Google took {} seconds".format(time.time() - start))
 
     # resolve reddit URLs to comments and remove HTML/markdown syntax
