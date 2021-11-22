@@ -40,7 +40,7 @@ def get_recommendations(query):
 
     start = time.time()
     the_comments = (seq(reddit_urls)
-                    .flat_map(lambda reddit_url: comments.get_comments_from_url_praw(reddit_url))
+                    .flat_map(comments.get_comments_from_url)
                     .map(clean_comment)
                     .map(Comment.from_dict)
                     .to_list())

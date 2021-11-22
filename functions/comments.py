@@ -111,14 +111,17 @@ def get_comments_from_url(url: str) -> list:
     :param url:
     """
     start = time.time()
-    i = url.find("/comments/") + len("/comments/")
-    submission_id = url[i:i + ID_LENGTH]
-    j = url.find("/r/") + len("/r/")
-    subreddit = url[j:url.find("/", j)]
+    submission_id = url_to_submission_id(url)
+    subreddit = url_to_subreddit(url)
     pushshift_url = f"https://api.pushshift.io/reddit/comment/search/?subreddit={subreddit}&link_id={submission_id}&limit=1000"
     request_start = time.time()
     submission = requests.get(pushshift_url)
-    submission_results = json.loads(submission.content)['data']
+    submission_results = []
+    try:
+        submission_results = json.loads(submission.content)['data']
+    except json.decoder.JSONDecodeError:
+        print(f"ERROR: JSONDecodeError for {pushshift_url}")
+        print(f"response: {submission.content}")
     num_results = len(submission_results)
     while num_results == 100:
         pushshift_url = f"https://api.pushshift.io/reddit/comment/search/?subreddit={subreddit}&link_id={submission_id}&limit=1000&until={submission_results[-1]['created_utc']}"
@@ -126,7 +129,12 @@ def get_comments_from_url(url: str) -> list:
         time.sleep(max(0., 0.7 - (request_end - request_start)))
         request_start = time.time()
         submission = requests.get(pushshift_url)
-        additional_results = json.loads(submission.content)['data']
+        additional_results = []
+        try:
+            additional_results = json.loads(submission.content)['data']
+        except json.decoder.JSONDecodeError:
+            print(f"ERROR: JSONDecodeError for {pushshift_url}")
+            print(f"response: {submission.content}")
         num_results = len(additional_results)
         submission_results += additional_results
     request_end = time.time()
@@ -174,6 +182,12 @@ def url_to_submission_id(url):
     """ Returns the unique submission id from the match thread url """
     parsed_url = urlparse(url)
     return parsed_url.path.split('/')[4]
+
+
+def url_to_subreddit(url):
+    """ Returns the subreddit name from the url """
+    parsed_url = urlparse(url)
+    return parsed_url.path.split('/')[2]
 
 
 def get_comments_from_urls(urls: list[str]) -> list:
